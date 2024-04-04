@@ -8,40 +8,8 @@
 #include <algorithm>
 #include <fstream>
 #include "AvlTree.h"
+#include "WordItem.h"
 
-
-struct DocumentItem {
-    std::string documentName;
-    int count;
-    DocumentItem(std::string name, int count) : documentName(std::move(name)), count(count) {}
-};
-
-struct WordItem {
-    std::string word;
-    std::vector<DocumentItem> documents;
-    WordItem(std::string w) : word(std::move(w)) {}
-
-    void checkDocument(const std::string& documentName, int count) {
-        auto it = std::find_if(documents.begin(), documents.end(), [&documentName](const DocumentItem& di) {
-            return di.documentName == documentName;
-        });
-        if (it != documents.end()) {
-            it->count += count;
-        } else {
-            documents.emplace_back(documentName, count);
-        }
-    }
-};
-
-//Operator Overloading `<<` for printTree()
-std::ostream& operator<<(std::ostream& os, const WordItem& item) {
-    os << "Word: \"" << item.word << "\", Documents: [";
-    for (const auto& document : item.documents) {
-        os << "{Name: " << document.documentName << ", Count: " << document.count << "}, ";
-    }
-    os << "]";
-    return os;
-}
 
 std::string toLower(const std::string& str) {
     std::string lowerStr = str;
@@ -57,8 +25,51 @@ int main(){
     //Populate the AvlTree
     //Take input queries and show results
 
-    AvlTree<int> tree(-1);
-    
-    
+
+    // Initialize the tree with a "not found" item.
+    WordItem notFound("NOT_FOUND");
+    AvlTree<WordItem> wordTree(notFound);
+
+    // Insert WordItem objects into the tree, with some initial document counts.
+    std::cout << "Inserting words with initial document counts...\n";
+    WordItem apple("apple");
+    apple.updateDocument("Doc1.txt", 1);
+    wordTree.insert(apple);
+
+    WordItem banana("banana");
+    banana.updateDocument("Doc2.txt", 2);
+    wordTree.insert(banana);
+
+    WordItem cherry("cherry");
+    cherry.updateDocument("Doc3.txt", 3);
+    wordTree.insert(cherry);
+
+    // Print the tree to show its content after the insertions.
+    std::cout << "Tree after insertions:\n";
+    wordTree.printTree();
+    std::cout << "\n\n";
+
+    // Demonstrate searching for a specific word item.
+    std::cout << "Searching for 'banana':\n";
+    const auto& foundItem = wordTree.find(WordItem("banana"));
+    if (foundItem.word != notFound.word) { // Check if the word was found.
+        std::cout << foundItem << "\n"; // Utilizing the overloaded << operator.
+    } else {
+        std::cout << "'banana' not found in the tree.\n";
+    }
+
+    // Demonstrate finding the minimum and maximum items in the tree.
+    std::cout << "Minimum item in the tree: " << wordTree.findMin() << "\n";
+    std::cout << "Maximum item in the tree: " << wordTree.findMax() << "\n";
+    std::cout << "Printing the tree:\n";
+    wordTree.printTree();
+    std::cout << "\n\n";
+    std::cout << "Removing element " << banana.word << std::endl;
+    wordTree.remove(banana);
+    std::cout << "Printing the tree:\n";
+    wordTree.printTree();
+    std::cout << "\n\n";
+
     return 0;
+
 }
