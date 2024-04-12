@@ -59,7 +59,7 @@ int main(){
     //Take names of input files
     std::vector<std::string> inputFileVector(inputFileCount, "");
     int fileCounter = 1;
-    for (std::string& s: inputFileVector){
+    for (std::string& s : inputFileVector) {
         std::cout << "Enter " << fileCounter << ". file name: ";
         std::cin >> s;
         fileCounter++;
@@ -81,52 +81,76 @@ int main(){
             }
         }
     }
-    
-    //Take query input, seperate and clean the words
+
+    std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    std::string queryLine;
-    std::cout << "Enter queried words in one line: ";
-    std::getline(std::cin, queryLine);
-    std::istringstream queryStream(queryLine);
-    std::vector<std::string> queryWords;
 
-    std::string queryWord;
-    while (queryStream >> queryWord) {
-        queryWords.push_back(cleanWord(queryWord));
-    }
+    bool running = true;
+    while(running) {
+        //Take query input, seperate and clean the words
+        std::string queryLine;
+        std::cout << "Enter queried words in one line: ";
+        std::getline(std::cin, queryLine);
+        //Terminating input check
+        if (queryLine == "ENDOFINPUT") {
+            running = false;
+            break;
+        }
+        std::istringstream queryStream(queryLine);
+        std::vector<std::string> queryWords;
 
-    std::map<std::string, std::map<std::string, int>> documentWordCounts;
-
-    //Occurence of each word in each document, stored in the map
-    for (const auto& word : queryWords) {
-        WordItem tempItem(word);
-        const WordItem& foundItem = wordTree.find(tempItem);
-        if (foundItem.word != "NOT_FOUND") {
-            for (const auto& doc : foundItem.documents) {
-                documentWordCounts[doc.documentName][word] = doc.count;
+        std::string queryWord;
+        bool removeFlag = false;
+        while (queryStream >> queryWord) {
+            if (queryWord == "REMOVE") {
+                queryWords.push_back(queryWord);
+            }
+            else {
+                queryWords.push_back(cleanWord(queryWord));
             }
         }
-    }
-
-    //find documents that contain all the query
-    std::vector<std::string> commonDocuments;
-    for (const auto& [docName, wordsCountMap] : documentWordCounts) {
-        if (wordsCountMap.size() == queryWords.size()) {
-            commonDocuments.push_back(docName);
-        }
-    }
-
-    //output
-    if (commonDocuments.empty()){
-        std::cout << "No document contains the given query\n";
-    }
-    else {
-        for (const auto& docName : commonDocuments) {
-            std::cout << "in Document " << docName;
-            for (const auto& word : queryWords) {
-                std::cout << ", " << word << " found " << documentWordCounts[docName][word] << " times";
+        if (!queryWords.empty() && queryWords[0] == "REMOVE") {
+            for (size_t i = 1; i < queryWords.size(); i++) {
+                WordItem wordToRemove(queryWords[i]);
+                wordTree.remove(wordToRemove);
+                std::cout << wordToRemove.word << " has been REMOVED\n";
             }
-            std::cout << ".\n";
+            continue;
+        }
+
+        std::map<std::string, std::map<std::string, int>> documentWordCounts;
+
+        //Occurence of each word in each document, stored in the map
+        for (const auto& word : queryWords) {
+            WordItem tempItem(word);
+            const WordItem& foundItem = wordTree.find(tempItem);
+            if (foundItem.word != "NOT_FOUND") {
+                for (const auto& doc : foundItem.documents) {
+                    documentWordCounts[doc.documentName][word] = doc.count;
+                }
+            }
+        }
+
+        //find documents that contain all the query
+        std::vector<std::string> commonDocuments;
+        for (auto it = documentWordCounts.begin(); it != documentWordCounts.end(); ++it) {
+            if (it->second.size() == queryWords.size()) {
+                commonDocuments.push_back(it->first);
+            }
+        }
+
+        //output
+        if (commonDocuments.empty()) {
+            std::cout << "No document contains the given query\n";
+        }
+        else {
+            for (const auto& docName : commonDocuments) {
+                std::cout << "in Document " << docName;
+                for (const auto& word : queryWords) {
+                    std::cout << ", " << word << " found " << documentWordCounts[docName][word] << " times";
+                }
+                std::cout << ".\n";
+            }
         }
     }
 
